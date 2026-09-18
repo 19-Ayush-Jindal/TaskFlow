@@ -1,0 +1,53 @@
+services:
+  redis:
+    image: redis:7-alpine
+    # appendonly gives roughly one second of durability. Without it a crash
+    # can lose acknowledged jobs, which quietly breaks at-least-once.
+    command: redis-server --appendonly yes --appendfsync everysec
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  api:
+    build: .
+    command: node src/api/server.js
+    environment:
+      PORT: 3000
+      REDIS_URL: redis://redis:6379
+    ports:
+      - "3000:3000"
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  scheduler:
+    build: .
+    command: node src/scheduler/index.js
+    environment:
+      REDIS_URL: redis://redis:6379
+      TICK_INTERVAL_MS: 200
+      PROMOTE_BATCH_SIZE: 100
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  worker:
+    build: .
+    command: node src/worker/index.js
+    # Safe now that attempts are capped. Without max_attempts this would
+    # turn a poison job from a worker graveyard into an endless crash loop.
+    restart: unless-stopped
+    environment:
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
+
+volumes:
+  redis-data:

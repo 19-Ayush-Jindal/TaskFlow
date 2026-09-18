@@ -1,0 +1,21 @@
+{
+  "name": "taskflow",
+  "version": "0.1.0",
+  "description": "Distributed job scheduler and worker queue",
+  "type": "module",
+  "scripts": {
+    "api": "node src/api/server.js",
+    "worker": "node src/worker/index.js",
+    "dev:api": "node --watch src/api/server.js",
+    "dev:worker": "node --watch src/worker/index.js"
+  },
+  "dependencies": {
+    "cron-parser": "^5.10.1",
+    "express": "^4.19.2",
+    "ioredis": "^5.4.1",
+    "ulid": "^2.3.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
